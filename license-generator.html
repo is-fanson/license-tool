@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>License 生成器</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --cyan: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d2991d;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px;
+    width: 100%;
+    max-width: 520px;
+    text-align: center;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--cyan);
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+
+  /* Loading */
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 24px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Key display */
+  .key-box {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .key-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .key-value {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--green);
+    letter-spacing: 1px;
+    word-break: break-all;
+    user-select: all;
+  }
+  .key-meta {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .key-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(210,153,29,0.15);
+    color: var(--yellow);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-copy {
+    background: var(--cyan);
+    color: #fff;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .btn-copy:hover { filter: brightness(1.1); }
+  .btn-copy.copied {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .btn-new {
+    background: transparent;
+    color: var(--muted);
+    border-color: var(--border);
+  }
+  .btn-new:hover { color: var(--text); border-color: var(--muted); }
+
+  /* Login */
+  .login-box {
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .login-box input {
+    width: 100%;
+    padding: 10px 14px;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+    text-align: center;
+    font-family: inherit;
+    margin-bottom: 16px;
+  }
+  .login-box input:focus { outline: none; border-color: var(--cyan); }
+  .login-box .btn { width: 100%; }
+  .login-hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 12px;
+  }
+
+  /* Error */
+  .error {
+    background: rgba(248,81,73,0.1);
+    border: 1px solid rgba(248,81,73,0.3);
+    border-radius: 8px;
+    padding: 16px;
+    color: var(--red);
+    font-size: 14px;
+  }
+
+  /* Config drawer */
+  .config-toggle {
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    margin-top: 20px;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+  .config-toggle:hover { color: var(--text); }
+  .config-panel {
+    display: none;
+    margin-top: 16px;
+    text-align: left;
+  }
+  .config-panel.open { display: block; }
+  .config-panel label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+  .config-panel input, .config-panel select {
+    width: 100%;
+    padding: 8px 12px;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .config-panel input:focus, .config-panel select:focus {
+    outline: none;
+    border-color: var(--cyan);
+  }
+  .config-row {
+    display: flex;
+    gap: 12px;
+  }
+  .config-row > * { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Login gate -->
+  <div id="loginGate">
+    <h1>License 生成器</h1>
+    <p class="subtitle">生成 Claude Code + DeepSeek 安装凭证</p>
+    <div class="login-box">
+      <input type="password" id="passwordInput" placeholder="请输入管理员密码" onkeydown="if(event.key==='Enter')verifyPassword()">
+      <button class="btn btn-copy" onclick="verifyPassword()">验证</button>
+      <p id="loginError" style="display:none;color:var(--red);font-size:13px;margin-top:8px">密码错误</p>
+    </div>
+  </div>
+
+  <!-- Main content (hidden until login) -->
+  <div id="mainContent" style="display:none">
+  <h1>License 生成器</h1>
+  <p class="subtitle">生成 Claude Code + DeepSeek 安装凭证</p>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p style="color:var(--muted);font-size:13px">正在生成 License...</p>
+  </div>
+
+  <div id="result" style="display:none">
+    <div class="key-box">
+      <div class="key-label">License Key</div>
+      <div class="key-value" id="licenseKey"></div>
+    </div>
+    <div class="key-meta">
+      <span>有效期至 <strong id="expiryDate"></strong></span>
+      <span><span class="status-badge">未激活</span></span>
+    </div>
+    <button class="btn btn-copy" id="copyBtn" onclick="copyKey()">
+      <svg id="copyIcon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"/></svg>
+      <span id="copyText">一键复制</span>
+    </button>
+    <button class="btn btn-new" onclick="generateNew()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.75a.75.75 0 00-1.5 0V7H2.75a.75.75 0 000 1.5H6.5v4.25a.75.75 0 001.5 0V8.5h3.75a.75.75 0 000-1.5H8V2.75z"/></svg>
+      生成新的 License
+    </button>
+  </div>
+
+  <div id="error" style="display:none" class="error"></div>
+
+  </div><!-- end mainContent -->
+
+<button class="config-toggle" onclick="toggleConfig()">配置选项</button>
+  <div class="config-panel" id="configPanel">
+    <label>Supabase URL</label>
+    <input type="text" id="supabaseUrl" value="https://onzyjumuidejsxzgzwit.supabase.co">
+
+    <label>Supabase Key</label>
+    <input type="password" id="supabaseKey" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uenlqdW11aWRlanN4emd6d2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NTU0NDIsImV4cCI6MjA5NTEzMTQ0Mn0.DuFex3z0ID_BFNTpYkbd7jBeoFwmThXge98H0v63Xo8">
+
+    <div class="config-row">
+      <div>
+        <label>有效期（天）</label>
+        <input type="number" id="expiryDays" value="365" min="1" max="3650">
+      </div>
+      <div>
+        <label>生成数量</label>
+        <select id="count">
+          <option value="1">1 个</option>
+          <option value="5">5 个</option>
+          <option value="10">10 个</option>
+          <option value="20">20 个</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Password protection — SHA-256 hash of your admin password
+// Change this hash to set a different password:
+//   echo -n "your_password" | openssl dgst -sha256
+// ============================================================
+const PASSWORD_HASH = '9bfedadb4d097fefec68500d99a3dc060c4e9658bd8b1fa0a2e919241ff9f897';
+
+async function sha256(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function verifyPassword() {
+  const input = document.getElementById('passwordInput').value;
+  const hash = await sha256(input);
+  if (hash === PASSWORD_HASH) {
+    document.getElementById('loginGate').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    // Auto-generate after successful login
+    doGenerate();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
+  }
+}
+
+const SUPABASE_URL = () => document.getElementById('supabaseUrl').value.trim();
+const SUPABASE_KEY = () => document.getElementById('supabaseKey').value.trim();
+
+function generateKey() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const seg = () => {
+    let s = '';
+    for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    return s;
+  };
+  return `DS-CNDS-${seg()}-${seg()}`;
+}
+
+async function insertKeys(keys, expiresAt) {
+  const rows = keys.map(k => ({
+    license_key: k,
+    status: 'active',
+    expires_at: expiresAt
+  }));
+
+  const resp = await fetch(`${SUPABASE_URL()}/rest/v1/licenses`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY(),
+      'Authorization': `Bearer ${SUPABASE_KEY()}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(rows)
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`HTTP ${resp.status}: ${text}`);
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  const el = document.getElementById('error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function showResult(keys, expiresAt) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error').style.display = 'none';
+
+  if (keys.length === 1) {
+    document.getElementById('licenseKey').textContent = keys[0];
+    document.getElementById('expiryDate').textContent = new Date(expiresAt).toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
+    document.getElementById('result').style.display = 'block';
+    resetCopyBtn();
+  } else {
+    // Multiple keys: show list
+    const list = keys.map((k, i) =>
+      `<div class="key-box" style="text-align:left;margin-bottom:8px">
+        <span style="color:var(--muted);font-size:11px">#${i+1}</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <code style="flex:1;font-family:monospace;font-size:15px;color:var(--green)">${k}</code>
+          <button class="btn btn-copy" style="width:auto;margin:0;padding:6px 12px;font-size:12px" onclick="copySingle('${k}', this)">复制</button>
+        </div>
+      </div>`
+    ).join('');
+    document.getElementById('result').innerHTML = `
+      <div style="margin-bottom:16px;color:var(--muted);font-size:13px">
+        有效期至 ${new Date(expiresAt).toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' })}
+        &nbsp;<span class="status-badge">未激活</span>
+      </div>
+      ${list}
+      <button class="btn btn-new" onclick="generateNew()" style="margin-top:8px">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.75a.75.75 0 00-1.5 0V7H2.75a.75.75 0 000 1.5H6.5v4.25a.75.75 0 001.5 0V8.5h3.75a.75.75 0 000-1.5H8V2.75z"/></svg>
+        生成新的
+      </button>
+    `;
+    document.getElementById('result').style.display = 'block';
+  }
+}
+
+async function doGenerate() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('error').style.display = 'none';
+
+  const count = parseInt(document.getElementById('count').value);
+  const days = parseInt(document.getElementById('expiryDays').value);
+  const expiresAt = days > 0
+    ? new Date(Date.now() + days * 86400 * 1000).toISOString()
+    : null;
+
+  try {
+    const keys = [];
+    const seen = new Set();
+    while (keys.length < count) {
+      const k = generateKey();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      keys.push(k);
+    }
+
+    await insertKeys(keys, expiresAt);
+    showResult(keys, expiresAt);
+  } catch (e) {
+    showError('生成失败：' + e.message);
+  }
+}
+
+function copyKey() {
+  const key = document.getElementById('licenseKey').textContent;
+  navigator.clipboard.writeText(key).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.classList.add('copied');
+    document.getElementById('copyIcon').innerHTML = '<path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/>';
+    document.getElementById('copyText').textContent = '已复制';
+    setTimeout(resetCopyBtn, 2000);
+  });
+}
+
+function copySingle(key, btn) {
+  navigator.clipboard.writeText(key).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '已复制';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.background = '';
+    }, 1500);
+  });
+}
+
+function resetCopyBtn() {
+  const btn = document.getElementById('copyBtn');
+  if (btn) {
+    btn.classList.remove('copied');
+    document.getElementById('copyIcon').innerHTML = '<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"/>';
+    document.getElementById('copyText').textContent = '一键复制';
+  }
+}
+
+function generateNew() { doGenerate(); }
+
+function toggleConfig() {
+  document.getElementById('configPanel').classList.toggle('open');
+}
+
+// Triggered after password verification — do NOT call directly
+</script>
+
+</body>
+</html>
